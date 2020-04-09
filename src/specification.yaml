@@ -11,3 +11,145 @@ servers:
       domain:
         default: localhost:3000
         description: Domain
+components:
+  schemas:
+    ImageURIs:
+      allOf:
+        - type: object
+          properties:
+            imageURIs:
+              type: array
+              items:
+                type: string
+            statusCode:
+              type: integer
+          required:
+            - imageURIs
+            - statusCode
+    OperationalError:
+      allOf:
+        - type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+        - $ref: "#/components/schemas/ErrorStatusCode"
+    ErrorStatusCode:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          minimum: 400
+          maximum: 599
+      required:
+        - statusCode
+    SuccessStatusCode:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          minimum: 200
+          maximum: 399
+      required:
+        - statusCode
+    image:
+      type: string
+      format: binary
+    ImageURI:
+      type: string
+  parameters:
+    image:
+      in: path
+      name: image
+      required: true
+      schema:
+        $ref: "#/components/schemas/image"
+      description: The path to the image
+  responses:
+    400:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationalError"
+    403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationalError"
+    404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationalError"
+    413:
+      description: Payload Too Large
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationalError"
+    415:
+      description: Unsupported Media type
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OperationalError"
+paths:
+  /api/images:
+    get:
+      summary: Get array of imageURIs
+      operationId: getImages
+      x-controller: images
+      tags:
+        - Images
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ImageURIs"
+                  - $ref: "#/components/schemas/SuccessStatusCode"
+        400:
+          $ref: "#/components/responses/400"
+    post:
+      summary: Post a new image
+      operationId: createImageURI
+      x-controller: images
+      tags:
+        - Images
+      requestBody:
+        description: Picture data that is one of gif, jpeg, or png. PICTURE DATA SIZE RESTRICTED TO <= 200kb
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+              required:
+                - image
+      responses:
+        200:
+          description: OK
+          headers:
+            Content-Location:
+              description: The URI to the the image
+              schema:
+                type: string
+                example: /images/1/image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessStatusCode"
+        413:
+          $ref: "#/components/responses/413"
+        415:
+          $ref: "#/components/responses/415"
